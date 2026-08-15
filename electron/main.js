@@ -91,26 +91,10 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, "..", "dist", "index.html"));
   }
 
-  // Kapat (X) butonuna basınca direkt kapatma, önce onay sor
   mainWindow.on("close", (e) => {
     if (isQuitting) return;
     e.preventDefault();
-    dialog
-      .showMessageBox(mainWindow, {
-        type: "question",
-        buttons: ["İptal", "Evet"],
-        defaultId: 0,
-        cancelId: 0,
-        title: "Çıkış",
-        message: "Uygulamayı kapatmak istiyor musunuz?"
-      })
-      .then((result) => {
-        // response 1 = "Evet" -> pencereyi gizle, arka planda/tepside çalışmaya devam et
-        // response 0 = "İptal" -> hiçbir şey yapma, sadece onay ekranı kapanır
-        if (result.response === 1) {
-          mainWindow.hide();
-        }
-      });
+    mainWindow.hide();
   });
 }
 
