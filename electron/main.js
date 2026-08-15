@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
@@ -15,6 +15,8 @@ const ytDlpBinaryPath = path.join(
 
 let ytDlpWrap;
 let mainWindow;
+let tray = null;
+let isQuitting = false;
 
 const settingsPath = path.join(app.getPath("userData"), "settings.json");
 
@@ -88,15 +90,66 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, "..", "dist", "index.html"));
   }
+
+  // Kapat (X) butonuna basınca direkt kapatma, önce onay sor
+  mainWindow.on("close", (e) => {
+    if (isQuitting) return;
+    e.preventDefault();
+    dialog
+      .showMessageBox(mainWindow, {
+        type: "question",
+        buttons: ["İptal", "Evet"],
+        defaultId: 0,
+        cancelId: 0,
+        title: "Çıkış",
+        message: "Uygulamayı kapatmak istiyor musunuz?"
+      })
+      .then((result) => {
+        // response 1 = "Evet" -> pencereyi gizle, arka planda/tepside çalışmaya devam et
+        // response 0 = "İptal" -> hiçbir şey yapma, sadece onay ekranı kapanır
+        if (result.response === 1) {
+          mainWindow.hide();
+        }
+      });
+  });
+}
+
+function createTray() {
+  tray = new Tray(path.join(__dirname, "..", "build", "icon.ico"));
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "Aç",
+      click: () => {
+        mainWindow.show();
+      }
+    },
+    {
+      label: "Kapat",
+      click: () => {
+        isQuitting = true;
+        app.quit();
+      }
+    }
+  ]);
+  tray.setToolTip("ClipGrab Studio");
+  tray.setContextMenu(contextMenu);
+  tray.on("click", () => {
+    mainWindow.show();
+  });
 }
 
 app.whenReady().then(async () => {
   await ensureYtDlp();
   createWindow();
+  createTray();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+});
+
+app.on("before-quit", () => {
+  isQuitting = true;
 });
 
 app.on("window-all-closed", () => {
