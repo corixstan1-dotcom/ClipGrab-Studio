@@ -1,10 +1,10 @@
 node_modules/
 dist/
-build/
+build/*
+!build/icon.ico
 out/
+release/
 *.log
 .env
 .env.*
 !.env.example
-
-release/
